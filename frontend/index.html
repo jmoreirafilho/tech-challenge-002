@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>N-Puzzle | Algoritmo Genético</title>
+    <style>
+        :root {
+            --navy: #102a43;
+            --blue: #1677d2;
+            --green: #07885b;
+            --lightgreen: #e3f8ee;
+            --bg: #edf4fa;
+            --muted: #62748a;
+            --line: #d9e4ed
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--navy);
+            font: 15px system-ui, -apple-system, Segoe UI, sans-serif
+        }
+
+        header {
+            background: linear-gradient(120deg, #102a43, #146eb4);
+            color: white;
+            padding: 26px max(24px, calc((100% - 1500px)/2))
+        }
+
+        h1 {
+            font-size: 28px;
+            margin: 0
+        }
+
+        header p {
+            margin: 5px 0 0;
+            opacity: .9
+        }
+
+        main {
+            max-width: 1500px;
+            margin: 22px auto;
+            padding: 0 18px
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: minmax(285px, .8fr) minmax(390px, 1.35fr) minmax(285px, .85fr);
+            gap: 18px;
+            align-items: start
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 14px;
+            padding: 19px;
+            box-shadow: 0 5px 18px #16324f13
+        }
+
+        h2 {
+            font-size: 19px;
+            margin: 0 0 7px
+        }
+
+        h3 {
+            font-size: 16px;
+            margin: 0
+        }
+
+        .sub {
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.45;
+            margin: 0 0 15px
+        }
+
+        .puzzle {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 7px;
+            width: 280px;
+            max-width: 100%;
+            margin: 15px auto
+        }
+
+        .tile {
+            height: 84px;
+            border-radius: 10px;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(145deg, #3097ed, #115fa9);
+            color: #fff;
+            font-weight: 800;
+            font-size: 30px;
+            box-shadow: 0 4px 8px #13538a55;
+            transition: all .2s
+        }
+
+        .tile.empty {
+            background: #dce8f2;
+            box-shadow: none;
+            color: transparent
+        }
+
+        .levels {
+            display: flex;
+            gap: 6px
+        }
+
+        .level {
+            flex: 1;
+            border: 0;
+            border-radius: 8px;
+            padding: 8px 3px;
+            background: #e7eef5;
+            color: var(--navy);
+            font-weight: 700;
+            cursor: pointer
+        }
+
+        .level.active {
+            background: #d0eaff;
+            outline: 2px solid #76b8ef;
+            color: #075596
+        }
+
+        .fields {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 9px;
+            margin-top: 15px
+        }
+
+        .fields label {
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700
+        }
+
+        .fields input {
+            width: 100%;
+            border: 1px solid #b9cad8;
+            border-radius: 8px;
+            padding: 8px;
+            color: var(--navy);
+            font: inherit;
+            margin-top: 4px
+        }
+
+        button {
+            border: 0;
+            border-radius: 8px;
+            padding: 10px 12px;
+            background: var(--blue);
+            color: #fff;
+            font: inherit;
+            font-weight: 700;
+            cursor: pointer
+        }
+
+        button:hover {
+            filter: brightness(.94)
+        }
+
+        button:disabled {
+            background: #9aaebe;
+            cursor: wait
+        }
+
+        .full {
+            width: 100%;
+            margin-top: 10px
+        }
+
+        .secondary {
+            background: #e7eef5;
+            color: var(--navy)
+        }
+
+        .flow {
+            display: flex;
+            gap: 7px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--line);
+            font-size: 12px;
+            color: var(--muted)
+        }
+
+        .flow b {
+            color: var(--blue)
+        }
+
+        .generation-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 15px 0 8px
+        }
+
+        .generation-head span {
+            font-size: 12px;
+            color: var(--muted)
+        }
+
+        .nav {
+            display: flex;
+            gap: 7px
+        }
+
+        .nav button {
+            padding: 7px 10px;
+            font-size: 13px
+        }
+
+        .attempt-list {
+            display: grid;
+            gap: 7px;
+            max-height: 540px;
+            overflow: auto;
+            padding-right: 3px
+        }
+
+        .attempt {
+            border: 1px solid var(--line);
+            border-radius: 9px;
+            padding: 9px 10px;
+            background: #fbfdff
+        }
+
+        .attempt.elite {
+            background: var(--lightgreen);
+            border-color: #9edfc2
+        }
+
+        .attempt-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            font-size: 13px
+        }
+
+        .badge {
+            background: #c8f1dc;
+            color: #056543;
+            border-radius: 99px;
+            padding: 2px 7px;
+            font-size: 11px;
+            font-weight: 800
+        }
+
+        .moves {
+            margin-top: 5px;
+            color: #486277;
+            font: 12px ui-monospace, Consolas, monospace;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis
+        }
+
+        .notice {
+            border-left: 4px solid var(--blue);
+            background: #eef7ff;
+            color: #285273;
+            border-radius: 4px;
+            padding: 11px;
+            font-size: 13px;
+            line-height: 1.4
+        }
+
+        .hidden {
+            display: none
+        }
+
+        .result-title {
+            font-size: 21px;
+            font-weight: 800;
+            color: var(--green);
+            margin: 12px 0
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin: 12px 0
+        }
+
+        .metric {
+            background: #f2f7fb;
+            border-radius: 9px;
+            padding: 10px;
+            text-align: center
+        }
+
+        .metric b {
+            display: block;
+            color: var(--blue);
+            font-size: 21px
+        }
+
+        .metric small {
+            font-size: 11px;
+            color: var(--muted)
+        }
+
+        .sequence {
+            background: #102a43;
+            color: #d7edff;
+            border-radius: 8px;
+            padding: 10px;
+            font: 12px ui-monospace, Consolas, monospace;
+            line-height: 1.55;
+            max-height: 190px;
+            overflow: auto
+        }
+
+        .final-board {
+            display: grid;
+            grid-template-columns: repeat(3, 35px);
+            gap: 4px;
+            margin: 12px 0
+        }
+
+        .final-board span {
+            height: 35px;
+            background: #e5f5ee;
+            border-radius: 4px;
+            display: grid;
+            place-items: center;
+            font-weight: 800
+        }
+
+        .final-board span:last-child {
+            background: #dce8f2
+        }
+
+        .explain {
+            font-size: 13px;
+            color: var(--muted);
+            line-height: 1.45;
+            margin-top: 13px
+        }
+
+        @media(max-width:1100px) {
+            .layout {
+                grid-template-columns: 1fr 1fr
+            }
+
+            .result-column {
+                grid-column: span 2
+            }
+        }
+
+        @media(max-width:700px) {
+            .layout {
+                grid-template-columns: 1fr
+            }
+
+            .result-column {
+                grid-column: auto
+            }
+
+            .attempt-list {
+                max-height: 360px
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>N-Puzzle resolvido por Algoritmo Genético</h1>
+        <p>Veja como uma população de tentativas evolui até montar o quebra-cabeça.</p>
+    </header>
+    <main>
+        <div class="layout">
+            <section class="card">
+                <h2>1. Puzzle e configurações</h2>
+                <p class="sub">O mesmo tabuleiro mostrado aqui é enviado para o algoritmo.</p>
+                <div class="levels"><button class="level active" data-steps="8">Fácil<br /><small>(8
+                            movs)</small></button><button class="level" data-steps="14">Médio<br /><small>(14
+                            movs)</small></button><button class="level" data-steps="20">Difícil<br /><small>(20
+                            movs)</small></button></div>
+                <div id="board" class="puzzle"></div>
+                <div class="fields"><label> Tentativas por geração<input id="population" type="number" min="40"
+                            max="800" value="120"></label><label> Limite de gerações<input id="generations"
+                            type="number" min="10" max="300" value="300"></label></div><button id="newGame"
+                    class="full secondary">↻ Gerar novo desafio</button><button id="solve" class="full">✨ Resolver o
+                    puzzle</button>
+                <p class="explain">Exemplo: 120 tentativas significa que, em cada geração, o algoritmo avalia 120
+                    sequências de movimentos.</p>
+            </section>
+            <section class="card">
+                <h2>2. Evolução das tentativas</h2>
+                <p class="sub">Cada cartão é uma tentativa. As tentativas verdes formam a elite: elas passam diretamente
+                    para a próxima geração.</p>
+                <div class="flow"><span><b>1.</b> Avaliar</span><span>→</span><span><b>2.</b> Preservar
+                        elite</span><span>→</span><span><b>3.</b> Cruzar e mutar</span></div>
+                <div id="generationEmpty" class="notice" style="margin-top:15px">Clique em “Resolver o puzzle” para
+                    acompanhar a geração 1.</div>
+                <div id="generationPanel" class="hidden">
+                    <div class="generation-head">
+                        <div>
+                            <h3 id="generationTitle">Geração 1</h3><span id="generationInfo"></span>
+                        </div>
+                        <div class="nav"><button id="previous">← Anterior</button><button id="next">Próxima →</button>
+                        </div>
+                    </div>
+                    <div id="eliteInfo" class="notice"></div>
+                    <div id="attemptList" class="attempt-list"></div>
+                </div>
+            </section>
+            <section class="card result-column">
+                <h2>3. Resultado final</h2>
+                <p class="sub">O resultado aparece depois que o algoritmo encontra a melhor sequência.</p>
+                <div id="status" class="notice">Gere um novo desafio para começar.</div>
+                <div id="result" class="hidden"></div>
+            </section>
+        </div>
+    </main>
+    <script>
+        let board = [], difficulty = 8, solving = false, trace = [], current = 0, eliteSize = 12; const el = id => document.getElementById(id), names = { C: '↑', B: '↓', E: '←', D: '→' };
+        function renderBoard(v) { el('board').innerHTML = v.map(x => `<div class="tile ${x === 0 ? 'empty' : ''}">${x || ''}</div>`).join('') } function miniBoard(v) { return `<div class="final-board">${v.map(x => `<span>${x || ''}</span>`).join('')}</div>` } function sleep(ms) { return new Promise(r => setTimeout(r, ms)) }
+        async function generate() { if (solving) return; el('result').classList.add('hidden'); el('status').textContent = 'Criando um tabuleiro solucionável…'; let r = await fetch('/api/novo-jogo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ embaralhamento: difficulty }) }), d = await r.json(); board = d.tabuleiro; renderBoard(board); el('status').textContent = 'Desafio pronto. Ajuste os parâmetros, se quiser, e clique em “Resolver o puzzle”.'; el('generationPanel').classList.add('hidden'); el('generationEmpty').classList.remove('hidden') }
+        function displayGeneration() { let g = trace[current]; if (!g) return; el('generationTitle').textContent = `Geração ${g.geracao + 1}`; el('generationInfo').textContent = `${g.tentativas.length} tentativas avaliadas`; let isLast = current === trace.length - 1; el('eliteInfo').textContent = isLast ? `As ${eliteSize} melhores tentativas estão destacadas. Esta foi a última geração, pois o algoritmo encerrou a busca.` : `As ${eliteSize} tentativas em verde são a elite: serão copiadas para a geração ${g.geracao + 2}. As demais posições serão preenchidas por filhos criados por cruzamento e mutação.`; el('attemptList').innerHTML = g.tentativas.map(t => `<article class="attempt ${t.posicao <= eliteSize ? 'elite' : ''}"><div class="attempt-top"><b>Tentativa ${t.posicao}</b>${t.posicao <= eliteSize ? '<span class="badge">ELITE</span>' : '<span>filho / candidata</span>'}</div><div>Distância até solução: <b>${t.distancia}</b> · Inválidos: ${t.invalidos}</div><div class="moves">${t.movimentos.map(m => names[m]).join(' ')}</div></article>`).join(''); el('previous').disabled = current === 0; el('next').disabled = isLast }
+        function applyMove(v, m) { let z = v.indexOf(0), row = Math.floor(z / 3), col = z % 3, d = { C: [-1, 0], B: [1, 0], E: [0, -1], D: [0, 1] }[m], nr = row + d[0], nc = col + d[1]; if (nr < 0 || nr > 2 || nc < 0 || nc > 2) return v; let target = nr * 3 + nc, next = [...v];[next[z], next[target]] = [next[target], next[z]]; return next } async function animate(moves) { for (const m of moves) { let next = applyMove(board, m); if (next !== board) { board = next; renderBoard(board); await sleep(100) } } }
+        async function solve() { if (solving || !board.length) return; let population = +el('population').value, generations = +el('generations').value; if (population < 40 || population > 800 || generations < 10 || generations > 300) { el('status').textContent = 'Use de 40 a 800 tentativas e de 10 a 300 gerações.'; return } solving = true; el('solve').disabled = el('newGame').disabled = true; el('result').classList.add('hidden'); el('status').textContent = 'Criando e avaliando a primeira população de tentativas…'; try { let r = await fetch('/api/solucionar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tabuleiro: board, populacao: population, geracoes: generations }) }), d = await r.json(); if (!r.ok) throw Error(d.detail); trace = d.tentativas_por_geracao; eliteSize = d.tamanho_elite; current = 0; el('generationEmpty').classList.add('hidden'); el('generationPanel').classList.remove('hidden'); displayGeneration(); el('status').textContent = 'Geração 1 exibida ao centro. Navegue pelas gerações para ver como a população evoluiu.'; await sleep(300); el('status').textContent = 'Melhor sequência encontrada. Observe agora o puzzle sendo montado.'; await animate(d.melhor_sequencia); let total = trace.reduce((n, g) => n + g.tentativas.length, 0), moves = d.melhor_sequencia.map(m => names[m]).join(' '); el('result').innerHTML = `<div class="result-title">${d.resolvido ? '✓ Puzzle resolvido' : 'Melhor aproximação encontrada'}</div>${miniBoard(d.tabuleiro_final)}<div class="metrics"><div class="metric"><b>${trace.length}</b><small>gerações usadas</small></div><div class="metric"><b>${total}</b><small>tentativas avaliadas</small></div><div class="metric"><b>${d.melhor_sequencia.length}</b><small>movimentos da solução</small></div><div class="metric"><b>${eliteSize}</b><small>elites preservadas</small></div></div><p class="explain">O algoritmo genético avaliou as sequências, preservou as melhores e criou novas tentativas por cruzamento e mutação até chegar à sequência:</p><div class="sequence">${moves}</div>`; el('result').classList.remove('hidden'); el('status').textContent = d.resolvido ? 'Processo concluído: uma tentativa montou o tabuleiro.' : 'O limite foi atingido; veja a melhor tentativa encontrada.' } catch (e) { el('status').textContent = 'Não foi possível executar: ' + e.message } finally { solving = false; el('solve').disabled = el('newGame').disabled = false } }
+        document.querySelectorAll('.level').forEach(b => b.onclick = () => { document.querySelector('.level.active').classList.remove('active'); b.classList.add('active'); difficulty = +b.dataset.steps; generate() }); el('newGame').onclick = generate; el('solve').onclick = solve; el('previous').onclick = () => { current--; displayGeneration() }; el('next').onclick = () => { current++; displayGeneration() }; generate();
+    </script>
+</body>
+
+</html>
